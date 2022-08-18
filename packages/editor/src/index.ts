@@ -37,6 +37,7 @@ export { default as TMagicCodeEditor } from './layouts/CodeEditor.vue';
 export { default as editorService } from './services/editor';
 export { default as propsService } from './services/props';
 export { default as historyService } from './services/history';
+export { default as storageService } from './services/storage';
 export { default as eventsService } from './services/events';
 export { default as uiService } from './services/ui';
 export { default as ComponentListPanel } from './layouts/sidebar/ComponentListPanel.vue';
@@ -57,7 +58,7 @@ export default {
     setConfig(option);
 
     app.component(Editor.name, Editor);
-    app.component(uiSelect.name, uiSelect);
+    app.component('m-fields-ui-select', uiSelect);
     app.component(CodeLink.name, CodeLink);
     app.component(Code.name, Code);
     app.component(CodeEditor.name, CodeEditor);

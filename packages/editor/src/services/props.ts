@@ -17,15 +17,15 @@
  */
 
 import { reactive } from 'vue';
-import { cloneDeep, mergeWith, random } from 'lodash-es';
+import { cloneDeep, mergeWith } from 'lodash-es';
 
 import type { FormConfig } from '@tmagic/form';
 import type { Id, MComponent, MNode, MPage } from '@tmagic/schema';
 import { NodeType } from '@tmagic/schema';
 import { isPop, toLine } from '@tmagic/utils';
 
-import type { PropsState } from '@editor/type';
-import { DEFAULT_CONFIG, fillConfig, getDefaultPropsValue } from '@editor/utils/props';
+import type { PropsState } from '../type';
+import { DEFAULT_CONFIG, fillConfig } from '../utils/props';
 
 import BaseService from './BaseService';
 
@@ -36,7 +36,15 @@ class Props extends BaseService {
   });
 
   constructor() {
-    super(['setPropsConfig', 'getPropsConfig', 'setPropsValue', 'getPropsValue', 'createId', 'setNewItemId']);
+    super([
+      'setPropsConfig',
+      'getPropsConfig',
+      'setPropsValue',
+      'getPropsValue',
+      'createId',
+      'setNewItemId',
+      'getDefaultPropsValue',
+    ]);
   }
 
   public setPropsConfigs(configs: Record<string, FormConfig>) {
@@ -99,18 +107,39 @@ class Props extends BaseService {
       return value;
     }
 
-    const data = cloneDeep(defaultValue as any);
-
-    await this.setNewItemId(data);
+    const [id, defaultPropsValue, data] = await Promise.all([
+      this.createId(type),
+      this.getDefaultPropsValue(type),
+      this.setNewItemId(
+        cloneDeep({
+          type,
+          ...defaultValue,
+        } as any),
+      ),
+    ]);
 
     return {
-      ...getDefaultPropsValue(type, await this.createId(type)),
-      ...mergeWith(cloneDeep(this.state.propsValueMap[type] || {}), data),
+      id,
+      ...defaultPropsValue,
+      ...mergeWith({}, cloneDeep(this.state.propsValueMap[type] || {}), data),
     };
   }
 
+  /**
+   * 生成指定位数的GUID，无【-】格式
+   * @param digit 位数，默认值8
+   * @returns
+   */
+  guid(digit = 8): string {
+    return 'x'.repeat(digit).replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c == 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
   public async createId(type: string | number): Promise<string> {
-    return `${type}_${random(10000, false)}`;
+    return `${type}_${this.guid()}`;
   }
 
   /**
@@ -133,6 +162,29 @@ class Props extends BaseService {
         await this.setNewItemId(item, config as MPage);
       }
     }
+
+    return config;
+  }
+
+  /**
+   * 获取默认属性配置
+   * @param type 组件类型
+   * @returns Object
+   */
+  public async getDefaultPropsValue(type: string) {
+    return ['page', 'container'].includes(type)
+      ? {
+          type,
+          layout: 'absolute',
+          style: {},
+          name: type,
+          items: [],
+        }
+      : {
+          type,
+          style: {},
+          name: type,
+        };
   }
 }
 

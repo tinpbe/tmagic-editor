@@ -61,11 +61,12 @@ import type { ElTree } from 'element-plus';
 import { throttle } from 'lodash-es';
 
 import type { MNode, MPage } from '@tmagic/schema';
-import { NodeType } from '@tmagic/schema';
+import { MContainer, NodeType } from '@tmagic/schema';
 import StageCore from '@tmagic/stage';
 
-import type { EditorService } from '@editor/services/editor';
-import type { Services } from '@editor/type';
+import type { EditorService } from '../../services/editor';
+import type { Services } from '../../type';
+import { Layout } from '../../type';
 
 import LayerMenu from './LayerMenu.vue';
 
@@ -104,8 +105,16 @@ const useDrop = (tree: Ref<InstanceType<typeof ElTree> | undefined>, editorServi
     return false;
   },
 
-  handleDragEnd() {
+  async handleDragEnd(e: any) {
     if (!tree.value) return;
+    const { data: node } = e;
+    const parent = editorService?.getParentById(node.id, false) as MContainer;
+    const layout = await editorService?.getLayout(parent);
+    node.style.position = layout;
+    if (layout === Layout.RELATIVE) {
+      node.style.top = 0;
+      node.style.left = 0;
+    }
     const { data } = tree.value;
     const [page] = data as [MPage];
     editorService?.update(page);

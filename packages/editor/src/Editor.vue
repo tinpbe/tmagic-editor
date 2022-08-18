@@ -30,7 +30,7 @@
 
     <template #props-panel>
       <slot name="props-panel">
-        <props-panel ref="propsPanel" @mounted="(instance) => $emit('props-panel-mounted', instance)">
+        <props-panel ref="propsPanel" @mounted="(instance: any) => $emit('props-panel-mounted', instance)">
           <template #props-panel-header>
             <slot name="props-panel-header"></slot>
           </template>
@@ -49,20 +49,21 @@ import { EventOption } from '@tmagic/core';
 import type { FormConfig } from '@tmagic/form';
 import type { MApp, MNode } from '@tmagic/schema';
 import type StageCore from '@tmagic/stage';
-import { CONTAINER_HIGHLIGHT_CLASS, MoveableOptions } from '@tmagic/stage';
+import { CONTAINER_HIGHLIGHT_CLASS, ContainerHighlightType, MoveableOptions } from '@tmagic/stage';
 
-import Framework from '@editor/layouts/Framework.vue';
-import NavMenu from '@editor/layouts/NavMenu.vue';
-import PropsPanel from '@editor/layouts/PropsPanel.vue';
-import Sidebar from '@editor/layouts/sidebar/Sidebar.vue';
-import Workspace from '@editor/layouts/workspace/Workspace.vue';
-import componentListService from '@editor/services/componentList';
-import editorService from '@editor/services/editor';
-import eventsService from '@editor/services/events';
-import historyService from '@editor/services/history';
-import propsService from '@editor/services/props';
-import uiService from '@editor/services/ui';
-import type { ComponentGroup, MenuBarData, MenuItem, Services, SideBarData, StageRect } from '@editor/type';
+import Framework from './layouts/Framework.vue';
+import NavMenu from './layouts/NavMenu.vue';
+import PropsPanel from './layouts/PropsPanel.vue';
+import Sidebar from './layouts/sidebar/Sidebar.vue';
+import Workspace from './layouts/workspace/Workspace.vue';
+import componentListService from './services/componentList';
+import editorService from './services/editor';
+import eventsService from './services/events';
+import historyService from './services/history';
+import propsService from './services/props';
+import storageService from './services/storage';
+import uiService from './services/ui';
+import type { ComponentGroup, MenuBarData, MenuItem, Services, SideBarData, StageRect } from './type';
 
 export default defineComponent({
   name: 'm-editor',
@@ -169,6 +170,11 @@ export default defineComponent({
       default: 800,
     },
 
+    containerHighlightType: {
+      type: String as PropType<ContainerHighlightType>,
+      default: ContainerHighlightType.DEFAULT,
+    },
+
     stageRect: {
       type: [String, Object] as PropType<StageRect>,
     },
@@ -269,6 +275,7 @@ export default defineComponent({
       propsService,
       editorService,
       uiService,
+      storageService,
     };
 
     provide('services', services);
@@ -287,6 +294,7 @@ export default defineComponent({
         isContainer: props.isContainer,
         containerHighlightClassName: props.containerHighlightClassName,
         containerHighlightDuration: props.containerHighlightDuration,
+        containerHighlightType: props.containerHighlightType,
       }),
     );
 

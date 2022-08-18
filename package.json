@@ -1,11 +1,11 @@
 {
-  "version": "1.1.0-beta.4",
+  "version": "1.1.0-beta.10",
   "name": "tmagic",
   "private": true,
   "packageManager": "pnpm@7.1.9",
   "scripts": {
     "bootstrap": "pnpm i && pnpm build",
-    "clean:top": "rimraf */**/dist */dist coverage dwt*",
+    "clean:top": "rimraf */**/dist */**/types */dist coverage dwt*",
     "clean:modules": "rimraf node_modules **/node_modules **/**/node_modules",
     "clean:all": "pnpm clean:top && pnpm clean:modules",
     "lint": "eslint . --ext .js,.vue,.ts,.tsx",
@@ -18,14 +18,9 @@
     "pg:react": "pnpm playground:react",
     "build": "pnpm --filter \"@tmagic/*\" build",
     "build:runtime:admin": "pnpm --filter \"runtime-*\" build:admin",
-    "build:playground": "pnpm --filter \"runtime-*\" --filter \"tmagic-playground\" build",
-    "postbuild:playground": "shx mkdir playground/dist/runtime && shx cp -r runtime/vue2/dist ./playground/dist/runtime/vue2 && shx cp -r runtime/vue3/dist ./playground/dist/runtime/vue3 && cp -r runtime/react/dist ./playground/dist/runtime/react",
+    "build:playground": "pnpm --filter \"runtime-vue3\" build && pnpm --filter \"tmagic-playground\" build",
     "docs": "pnpm --filter \"docs\" dev",
     "build:docs": "pnpm --filter \"docs\" build",
-    "page": "cd page && vite",
-    "page-vue2": "cd page-vue2 && vite",
-    "page-react": "cd page-react && vite",
-    "install-vue2": "cd runtime/vue2 && npm i",
     "reinstall": "pnpm clean:all && pnpm bootstrap",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
@@ -55,7 +50,7 @@
     "@types/node": "^15.12.4",
     "@typescript-eslint/eslint-plugin": "^4.28.0",
     "@typescript-eslint/parser": "^4.28.0",
-    "@vitejs/plugin-vue": "^1.2.3",
+    "@vitejs/plugin-vue": "^3.0.1",
     "c8": "^7.11.3",
     "chalk": "^4.1.0",
     "commitizen": "^4.2.4",
@@ -78,9 +73,10 @@
     "rimraf": "^3.0.2",
     "semver": "^7.3.7",
     "shx": "^0.3.4",
-    "typescript": "^4.3.4",
-    "vite": "^2.9.13",
-    "vitest": "^0.14.1"
+    "typescript": "^4.7.4",
+    "vite": "^3.0.4",
+    "vitest": "^0.21.1",
+    "vue": "^3.2.37"
   },
   "config": {
     "commitizen": {

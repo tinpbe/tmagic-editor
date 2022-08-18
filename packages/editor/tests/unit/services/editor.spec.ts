@@ -23,6 +23,7 @@ import type { MApp, MContainer, MNode, MPage } from '@tmagic/schema';
 import { NodeType } from '@tmagic/schema';
 
 import editorService from '@editor/services/editor';
+import storageService from '@editor/services/storage';
 import { COPY_STORAGE_KEY } from '@editor/utils';
 
 // mock window.localStage
@@ -207,7 +208,9 @@ describe('add', () => {
     // 添加后会选中这个节点
     const node = editorService.get('node');
     const parent = editorService.get('parent');
-    expect(node.id).toBe(newNode.id);
+    if (!Array.isArray(newNode)) {
+      expect(node.id).toBe(newNode.id);
+    }
     expect(parent.items).toHaveLength(3);
   });
 
@@ -221,7 +224,9 @@ describe('add', () => {
     });
     const node = editorService.get('node');
     const parent = editorService.get('parent');
-    expect(node.id).toBe(newNode.id);
+    if (!Array.isArray(newNode)) {
+      expect(node.id).toBe(newNode.id);
+    }
     expect(parent.items).toHaveLength(3);
   });
 
@@ -236,7 +241,9 @@ describe('add', () => {
       rootNode,
     );
     const node = editorService.get('node');
-    expect(node.id).toBe(newNode.id);
+    if (!Array.isArray(newNode)) {
+      expect(node.id).toBe(newNode.id);
+    }
     expect(rootNode.items.length).toBe(2);
   });
 
@@ -352,8 +359,8 @@ describe('copy', () => {
   test('正常', async () => {
     const node = editorService.getNodeById(NodeId.NODE_ID2);
     await editorService.copy(node!);
-    const str = globalThis.localStorage.getItem(COPY_STORAGE_KEY);
-    expect(str).toBe(JSON.stringify(node));
+    const str = await storageService.getItem(COPY_STORAGE_KEY);
+    expect(str).toHaveLength(1);
   });
 });
 
@@ -365,13 +372,13 @@ describe('paste', () => {
     await editorService.select(NodeId.PAGE_ID);
     const page = editorService.get<MPage>('page');
     expect(page.items).toHaveLength(2);
-    const newNode = await editorService.paste({ left: 0, top: 0 });
-    expect(newNode?.id === NodeId.NODE_ID2).toBeFalsy();
+    const newNodes = (await editorService.paste({ left: 0, top: 0 })) as MNode[];
+    expect(newNodes[0]?.id === NodeId.NODE_ID2).toBeFalsy();
     expect(page.items).toHaveLength(3);
   });
 
   test('空', async () => {
-    globalThis.localStorage.clear();
+    await storageService.clear();
     const newNode = await editorService.paste({ left: 0, top: 0 });
     expect(newNode).toBeUndefined();
   });

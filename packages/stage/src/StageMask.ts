@@ -108,11 +108,16 @@ export default class StageMask extends Rule {
     this.content.addEventListener('wheel', this.mouseWheelHandler);
     this.content.addEventListener('mousemove', this.highlightHandler);
     this.content.addEventListener('mouseleave', this.mouseLeaveHandler);
-    KeyController.global.keydown('shift', (e) => {
+
+    const isMac = /mac os x/.test(navigator.userAgent.toLowerCase());
+
+    const ctrl = isMac ? 'meta' : 'ctrl';
+
+    KeyController.global.keydown(ctrl, (e) => {
       e.inputEvent.preventDefault();
       this.isMultiSelectStatus = true;
     });
-    KeyController.global.keyup('shift', (e) => {
+    KeyController.global.keyup(ctrl, (e) => {
       e.inputEvent.preventDefault();
       this.isMultiSelectStatus = false;
     });
@@ -331,7 +336,9 @@ export default class StageMask extends Rule {
   private mouseUpHandler = (): void => {
     globalThis.document.removeEventListener('mouseup', this.mouseUpHandler);
     this.content.addEventListener('mousemove', this.highlightHandler);
-    this.emit('select');
+    if (!this.isMultiSelectStatus) {
+      this.emit('select');
+    }
   };
 
   private mouseWheelHandler = (event: WheelEvent) => {

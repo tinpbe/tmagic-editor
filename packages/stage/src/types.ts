@@ -29,6 +29,11 @@ import StageMask from './StageMask';
 export type CanSelect = (el: HTMLElement, event: MouseEvent, stop: () => boolean) => boolean | Promise<boolean>;
 export type IsContainer = (el: HTMLElement) => boolean | Promise<boolean>;
 
+export enum ContainerHighlightType {
+  DEFAULT = 'default',
+  ALT = 'alt',
+}
+
 export type StageCoreConfig = {
   /** 需要对齐的dom节点的CSS选择器字符串 */
   snapElementQuerySelector?: string;
@@ -36,9 +41,11 @@ export type StageCoreConfig = {
   zoom?: number;
   canSelect?: CanSelect;
   isContainer: IsContainer;
-  containerHighlightClassName: string;
-  containerHighlightDuration: number;
+  containerHighlightClassName?: string;
+  containerHighlightDuration?: number;
+  containerHighlightType?: ContainerHighlightType;
   moveableOptions?: ((core?: StageCore) => MoveableOptions) | MoveableOptions;
+  multiMoveableOptions?: ((core?: StageCore) => MoveableOptions) | MoveableOptions;
   /** runtime 的HTML地址，可以是一个HTTP地址，如果和编辑器不同域，需要设置跨域，也可以是一个相对或绝对路径 */
   runtimeUrl?: string;
   render?: (renderer: StageCore) => Promise<HTMLElement> | HTMLElement;
@@ -60,6 +67,16 @@ export interface StageDragResizeConfig {
   mask: StageMask;
 }
 
+/** 拖动状态 */
+export enum StageDragStatus {
+  /** 开始拖动 */
+  START = 'start',
+  /** 拖动中 */
+  ING = 'ing',
+  /** 拖动结束 */
+  END = 'end',
+}
+
 export type Rect = {
   width: number;
   height: number;
@@ -76,19 +93,21 @@ export interface GuidesEventData {
 }
 
 export interface UpdateEventData {
-  el: HTMLElement;
-  parentEl: HTMLElement | null;
-  ghostEl: HTMLElement;
-  style: {
-    width?: number;
-    height?: number;
-    left?: number;
-    top?: number;
-    transform?: {
-      rotate?: string;
-      scale?: string;
+  data: {
+    el: HTMLElement;
+    style: {
+      width?: number;
+      height?: number;
+      left?: number;
+      top?: number;
+      transform?: {
+        rotate?: string;
+        scale?: string;
+      };
     };
-  };
+    ghostEl?: HTMLElement;
+  }[];
+  parentEl: HTMLElement | null;
 }
 
 export interface SortEventData {
@@ -100,18 +119,19 @@ export interface SortEventData {
 export interface UpdateData {
   config: MNode;
   parent?: MContainer;
+  parentId: Id;
   root: MApp;
 }
 
 export interface RemoveData {
   id: Id;
+  parentId: Id;
   root: MApp;
 }
 
 export interface Runtime {
   getApp?: () => Core;
   beforeSelect?: (el: HTMLElement) => Promise<boolean> | boolean;
-  getSnapElements?: (el?: HTMLElement) => HTMLElement[];
   updateRootConfig?: (config: MApp) => void;
   updatePageId?: (id: Id) => void;
   select?: (id: Id) => Promise<HTMLElement> | HTMLElement;

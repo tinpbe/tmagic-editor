@@ -21,7 +21,7 @@ import { EventEmitter } from 'events';
 import type { Id } from '@tmagic/schema';
 import { addClassName } from '@tmagic/utils';
 
-import { DEFAULT_ZOOM, GHOST_EL_ID_PREFIX, PAGE_CLASS } from './const';
+import { CONTAINER_HIGHLIGHT_CLASS, DEFAULT_ZOOM, GHOST_EL_ID_PREFIX, PAGE_CLASS } from './const';
 import StageDragResize from './StageDragResize';
 import StageHighlight from './StageHighlight';
 import StageMask from './StageMask';
@@ -29,12 +29,14 @@ import StageMultiDragResize from './StageMultiDragResize';
 import StageRender from './StageRender';
 import {
   CanSelect,
+  ContainerHighlightType,
   GuidesEventData,
   IsContainer,
   RemoveData,
   Runtime,
   SortEventData,
   StageCoreConfig,
+  StageDragStatus,
   UpdateData,
   UpdateEventData,
 } from './types';
@@ -56,6 +58,7 @@ export default class StageCore extends EventEmitter {
   public zoom = DEFAULT_ZOOM;
   public containerHighlightClassName: string;
   public containerHighlightDuration: number;
+  public containerHighlightType?: ContainerHighlightType;
   public isContainer: IsContainer;
 
   private canSelect: CanSelect;
@@ -68,8 +71,9 @@ export default class StageCore extends EventEmitter {
     this.setZoom(config.zoom);
     this.canSelect = config.canSelect || ((el: HTMLElement) => !!el.id);
     this.isContainer = config.isContainer;
-    this.containerHighlightClassName = config.containerHighlightClassName;
-    this.containerHighlightDuration = config.containerHighlightDuration;
+    this.containerHighlightClassName = config.containerHighlightClassName || CONTAINER_HIGHLIGHT_CLASS;
+    this.containerHighlightDuration = config.containerHighlightDuration || 800;
+    this.containerHighlightType = config.containerHighlightType;
 
     this.renderer = new StageRender({ core: this });
     this.mask = new StageMask({ core: this });
@@ -101,6 +105,8 @@ export default class StageCore extends EventEmitter {
       .on('highlight', async (event: MouseEvent) => {
         const el = await this.getElementFromPoint(event);
         if (!el) return;
+        // 如果多选组件处于拖拽状态时不进行组件高亮
+        if (this.multiDr.dragStatus === StageDragStatus.ING) return;
         await this.highlight(el);
         if (this.highlightedDom === this.selectedDom) {
           this.highlightLayer.clearHighlight();
@@ -114,7 +120,6 @@ export default class StageCore extends EventEmitter {
       .on('beforeMultiSelect', async (event: MouseEvent) => {
         const el = await this.getElementFromPoint(event);
         if (!el) return;
-        this.clearSelectStatus('select');
         // 如果已有单选选中元素，不是magic-ui-page就可以加入多选列表
         if (this.selectedDom && !this.selectedDom.className.includes(PAGE_CLASS)) {
           this.selectedDomList.push(this.selectedDom as HTMLElement);
@@ -128,8 +133,7 @@ export default class StageCore extends EventEmitter {
         } else {
           this.selectedDomList.push(el);
         }
-        this.multiDr.multiSelect(this.selectedDomList);
-        this.emit('multiSelect', this.selectedDomList);
+        this.multiSelect(this.selectedDomList);
       });
 
     // 要先触发select，在触发update
@@ -141,9 +145,15 @@ export default class StageCore extends EventEmitter {
         setTimeout(() => this.emit('sort', data));
       });
 
-    this.multiDr.on('update', (data: UpdateEventData) => {
-      setTimeout(() => this.emit('update', data));
-    });
+    this.multiDr
+      .on('update', (data: UpdateEventData) => {
+        setTimeout(() => this.emit('update', data));
+      })
+      .on('select', async (id: Id) => {
+        const el = await this.getTargetElement(id);
+        this.select(el); // 选中
+        setTimeout(() => this.emit('select', el)); // set node
+      });
   }
 
   public getElementsFromPoint(event: MouseEvent) {
@@ -182,7 +192,7 @@ export default class StageCore extends EventEmitter {
     if (!canSelectByProp) return false;
     // 多选规则
     if (this.mask.isMultiSelectStatus) {
-      return this.multiDr.canSelect(el);
+      return this.multiDr.canSelect(el, stop);
     }
     return true;
   }
@@ -220,6 +230,17 @@ export default class StageCore extends EventEmitter {
         addSelectedClassName(this.selectedDom, this.renderer.contentWindow.document);
       }
     }
+  }
+
+  /**
+   * 多选
+   * @param domList 多选节点
+   */
+  public async multiSelect(idOrElList: HTMLElement[] | Id[]): Promise<void> {
+    this.clearSelectStatus('select');
+    const elList = await Promise.all(idOrElList.map(async (idOrEl) => await this.getTargetElement(idOrEl)));
+    this.multiDr.multiSelect(elList);
+    this.emit('multiSelect', elList);
   }
 
   /**
@@ -328,7 +349,7 @@ export default class StageCore extends EventEmitter {
     }
   }
 
-  public getAddContainerHighlightClassNameTimeout(event: MouseEvent, exclude: Element[] = []) {
+  public getAddContainerHighlightClassNameTimeout(event: MouseEvent, exclude: Element[] = []): NodeJS.Timeout {
     return globalThis.setTimeout(() => {
       this.addContainerHighlightClassName(event, exclude);
     }, this.containerHighlightDuration);

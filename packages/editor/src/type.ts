@@ -21,14 +21,15 @@ import type { Component } from 'vue';
 import type { FormConfig } from '@tmagic/form';
 import type { Id, MApp, MContainer, MNode, MPage } from '@tmagic/schema';
 import type StageCore from '@tmagic/stage';
-import type { MoveableOptions } from '@tmagic/stage';
+import type { ContainerHighlightType, MoveableOptions } from '@tmagic/stage';
 
-import type { ComponentListService } from '@editor/services/componentList';
-import type { EditorService } from '@editor/services/editor';
-import type { EventsService } from '@editor/services/events';
-import type { HistoryService } from '@editor/services/history';
-import type { PropsService } from '@editor/services/props';
-import type { UiService } from '@editor/services/ui';
+import type { ComponentListService } from './services/componentList';
+import type { EditorService } from './services/editor';
+import type { EventsService } from './services/events';
+import type { HistoryService } from './services/history';
+import type { PropsService } from './services/props';
+import type { StorageService } from './services/storage';
+import type { UiService } from './services/ui';
 
 export type BeforeAdd = (config: MNode, parent: MContainer) => Promise<MNode> | MNode;
 export type GetConfig = (config: FormConfig) => Promise<FormConfig> | FormConfig;
@@ -40,6 +41,7 @@ export interface InstallOptions {
 export interface Services {
   editorService: EditorService;
   historyService: HistoryService;
+  storageService: StorageService;
   eventsService: EventsService;
   propsService: PropsService;
   componentListService: ComponentListService;
@@ -51,6 +53,7 @@ export interface StageOptions {
   autoScrollIntoView: boolean;
   containerHighlightClassName: string;
   containerHighlightDuration: number;
+  containerHighlightType: ContainerHighlightType;
   render: () => HTMLDivElement;
   moveableOptions: MoveableOptions | ((core?: StageCore) => MoveableOptions);
   canSelect: (el: HTMLElement) => boolean | Promise<boolean>;
@@ -64,6 +67,7 @@ export interface StoreState {
   parent: MContainer | null;
   node: MNode | null;
   highlightNode: MNode | null;
+  nodes: MNode[];
   stage: StageCore | null;
   modifiedNodeIds: Map<Id, Id>;
   pageLength: number;
@@ -127,6 +131,19 @@ export interface AddMNode {
   name?: string;
   inputEvent?: DragEvent;
   [key: string]: any;
+}
+
+export interface PastePosition {
+  left?: number;
+  top?: number;
+  /**
+   * 粘贴位置X方向偏移量
+   */
+  offsetX?: number;
+  /**
+   * 粘贴位置Y方向偏移量
+   */
+  offsetY?: number;
 }
 
 /**
